@@ -5,10 +5,11 @@
     <!-- Left Section -->
     <div class="w-1/2 flex flex-col justify-center items-center">
         <div class="w-full justify-between flex">
-            <button class="w-[46%] justify-center select-none cursor-pointer hover:bg-[rgba(74,74,74,0.6)] bg-[rgba(74,74,74,0.4)] p-3 rounded-xl flex gap-3 font-semibold fs-3">
-                <img class="w-6 h-6" src="images/google.png" alt="google">
-                Sign In with Google
-            </button>
+            <a href="{{ route('oauth.google') }}" class="w-[46%] justify-center select-none cursor-pointer hover:bg-[rgba(74,74,74,0.6)] bg-[rgba(74,74,74,0.4)] p-3 rounded-xl flex gap-3 font-semibold fs-3">
+    <img class="w-6 h-6" src="images/google.png" alt="google">
+    Sign In with Google
+</a>
+
             <button class="w-[46%] justify-center select-none cursor-pointer hover:bg-[rgba(74,74,74,0.6)] bg-[rgba(74,74,74,0.4)] p-3 rounded-xl flex gap-3 font-semibold fs-3">
                 <img class="w-6 h-6" src="images/github.png" alt="google">
                 Sign In with Github
