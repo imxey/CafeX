@@ -1,7 +1,9 @@
 <x-guest-layout>
     <x-authentication-card>
         <x-slot name="left">
-            <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
+            <div class="h-full bg-[#4A4A4A] w-full flex items-center justify-center rounded-xl">
+                <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
+            </div>
         </x-slot>
         <x-slot name="right">
             <div class="w-full justify-between flex">
@@ -48,7 +50,7 @@
                 </div>
                 <div class="text-sm text-gray-600">
                     {{ __('Already have an account?') }}
-                    <a href="{{ route('login') }}" class="ml-1 underline hover:text-gray-900">
+                    <a href="{{ route('login') }}" class="ml-1 no-underline font-semibold text-sm hover:text-[#F18A16] text-[#EA9330]">
                         {{ __('Sign In here') }}
                     </a>
                 </div>

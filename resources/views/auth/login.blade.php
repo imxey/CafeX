@@ -21,9 +21,9 @@
             </div>
 
             @session('status')
-                <div class="mb-4 font-medium text-sm text-green-600">
-                    {{ $value }}
-                </div>
+            <div class="mb-4 font-medium text-sm text-green-600">
+                {{ $value }}
+            </div>
             @endsession
 
             <form method="POST" action="{{ route('login') }}" class="w-full flex flex-col gap-4">
@@ -40,15 +40,15 @@
                 </div>
                 <div class="text-sm text-gray-600">
                     {{ __('Don\'t have an account?') }}
-                    <a href="{{ route('register') }}" class="ml-1 underline hover:text-gray-900">
+                    <a href="{{ route('register') }}" class="ml-1 no-underline font-semibold text-sm hover:text-[#F18A16] text-[#EA9330]">
                         {{ __('Sign up here') }}
                     </a>
                 </div>
                 @if (Route::has('password.request'))
-                    <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        href="{{ route('password.request') }}">
-                        {{ __('Forgot your password?') }}
-                    </a>
+                <a class="no-underline font-semibold text-sm hover:text-[#F18A16] text-[#EA9330] w-max"
+                    href="{{ route('password.request') }}">
+                    {{ __('Forgot your password?') }}
+                </a>
                 @endif
                 <div class="w-full flex justify-center mt-4">
                     <x-button class="w-1/2 ">
@@ -58,7 +58,9 @@
             </form>
         </x-slot>
         <x-slot name="right">
-            <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
+            <div class="h-full bg-[#4A4A4A] w-full flex items-center justify-center rounded-xl">
+                <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
+            </div>
         </x-slot>
         <x-validation-errors class="mb-4" />
     </x-authentication-card>

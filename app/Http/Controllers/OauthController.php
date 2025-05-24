@@ -26,21 +26,19 @@ class OauthController extends Controller
             if ($finduser) {
                 Auth::login($finduser);
                 return redirect('/');
-
             } else {
                 $newUser = User::create([
                     'name' => $user->name ?? $user->nickname,
                     'email' => $user->email ?? $user->nickname,
                     'gauth_id' => $user->id,
                     'gauth_type' => $provider,
-                    'password' => bcrypt(Str::random(32)),
+                    'password' => bcrypt('password'),
                 ]);
 
                 Auth::login($newUser);
 
                 return redirect('/');
             }
-
         } catch (Exception $e) {
             dd("Error: " . $e->getMessage());
         }
