@@ -6,39 +6,39 @@ use Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Exception;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class OauthController extends Controller
 {
-    public function redirectToProvider()
+    public function redirectToProvider($provider)
     {
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver($provider)->redirect();
     }
-    public function handleProviderCallback()
+
+    public function handleProviderCallback($provider)
     {
         try {
 
-            $user = Socialite::driver('google')->user();
+            $user = Socialite::driver($provider)->user();
 
-            $finduser = User::where('gauth_id', $user->id)->first();
+            $finduser = User::where('email', $user->email ?? $user->nickname)->first();
 
-            if($finduser){
-
+            if ($finduser) {
                 Auth::login($finduser);
+                return redirect('/');
 
-                return redirect('/dashboard');
-
-            }else{
+            } else {
                 $newUser = User::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'gauth_id'=> $user->id,
-                    'gauth_type'=> 'google',
-                    'password' => encrypt('admin@123')
+                    'name' => $user->name ?? $user->nickname,
+                    'email' => $user->email ?? $user->nickname,
+                    'gauth_id' => $user->id,
+                    'gauth_type' => $provider,
+                    'password' => bcrypt(Str::random(32)),
                 ]);
 
                 Auth::login($newUser);
 
-                return redirect('/dashboard');
+                return redirect('/');
             }
 
         } catch (Exception $e) {
