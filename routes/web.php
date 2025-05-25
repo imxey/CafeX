@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SaveLocation;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\QuestionnaireForm;
 use Laravel\Socialite\Facades\Socialite;
@@ -19,6 +20,7 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
     Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire');
+    Route::post('/save-location', [SaveLocation::class, 'saveLocation'])->name('save-location');    
     Route::get('/history', function () {
         return view('history');
     })->name('history');
