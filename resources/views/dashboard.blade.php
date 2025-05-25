@@ -32,6 +32,7 @@
                     });
                 },
                 function (error) {
+                    alert('🚫 Gagal mendapatkan lokasi: ' + error.message);
                     console.error('🚫 Gagal ambil lokasi:', error.message)
                 }
             );
