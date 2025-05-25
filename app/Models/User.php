@@ -29,7 +29,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'gauth_id', 
+        'gauth_id',
         'gauth_type',
     ];
 
@@ -54,6 +54,10 @@ class User extends Authenticatable
         'profile_photo_url',
     ];
 
+    public function preferences()
+    {
+        return $this->hasMany(Preferences::class);
+    }
     /**
      * Get the attributes that should be cast.
      *

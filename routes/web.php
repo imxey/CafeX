@@ -15,10 +15,12 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    'isEmptyPreferences',
 ])->group(function () {
     Route::get('/', function () {
         return view('dashboard');
     })->name('dashboard');
+    Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire')->withoutMiddleware('isEmptyPreferences');
     Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire');
     Route::post('/save-location', [SaveLocation::class, 'saveLocation'])->name('save-location');    
     Route::get('/history', function () {
