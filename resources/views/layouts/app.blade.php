@@ -27,7 +27,7 @@
         @livewire('navigation-menu')
 
         <!-- Page Content -->
-        <main>
+        <main class="p-5">
             {{ $slot }}
         </main>
     </div>
