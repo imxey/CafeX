@@ -58,9 +58,13 @@
             </form>
         </x-slot>
         <x-slot name="right">
+<<<<<<< Updated upstream
             <div class="h-full bg-[#4A4A4A] w-full flex items-center justify-center rounded-xl">
                 <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
             </div>
+=======
+            <img class="w-full rounded-2xl" src="images/coffee.png" alt="coffee">
+>>>>>>> Stashed changes
         </x-slot>
         <x-validation-errors class="mb-4" />
     </x-authentication-card>

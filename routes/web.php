@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Livewire\QuestionnaireForm;
 use Laravel\Socialite\Facades\Socialite;
 
 
@@ -17,4 +18,5 @@ Route::middleware([
     Route::get('/', function () {
         return view('dashboard');
     })->name('dashboard');
+    Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire');
 });
