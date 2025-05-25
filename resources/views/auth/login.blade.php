@@ -5,12 +5,12 @@
             <div class="w-full justify-between flex">
                 <a href="{{ route('oauth.redirect', ['provider' => 'google']) }}"
                     class="w-[46%] justify-center select-none cursor-pointer hover:bg-[rgba(74,74,74,0.6)] bg-[rgba(74,74,74,0.4)] p-3 rounded-xl flex gap-3 font-semibold fs-3">
-                    <img class="w-6 h-6" src="images/google.png" alt="google">
+                    <img class="w-6 h-6" src="/images/google.png" alt="google">
                     Sign In with Google
                 </a>
                 <a href="{{ route('oauth.redirect', ['provider' => 'github']) }}" x
                     class="w-[46%] justify-center select-none cursor-pointer hover:bg-[rgba(74,74,74,0.6)] bg-[rgba(74,74,74,0.4)] p-3 rounded-xl flex gap-3 font-semibold fs-3">
-                    <img class="w-6 h-6" src="images/github.png" alt="google">
+                    <img class="w-6 h-6" src="/images/github.png" alt="google">
                     Sign In with Github
                 </a>
             </div>
@@ -58,13 +58,7 @@
             </form>
         </x-slot>
         <x-slot name="right">
-<<<<<<< Updated upstream
-            <div class="h-full bg-[#4A4A4A] w-full flex items-center justify-center rounded-xl">
-                <img class="w-[250px] h-[200px]" src="images/coffee.png" alt="coffee">
-            </div>
-=======
             <img class="w-full rounded-2xl" src="images/coffee.png" alt="coffee">
->>>>>>> Stashed changes
         </x-slot>
         <x-validation-errors class="mb-4" />
     </x-authentication-card>

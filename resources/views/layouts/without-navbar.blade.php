@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>CafeX</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/coffee.png') }}">
+    <title>KafeX</title>
+    <link rel="icon" type="image/ico" href="{{ asset('images/coffee.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 

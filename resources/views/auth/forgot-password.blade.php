@@ -9,9 +9,9 @@
         </div>
 
         @session('status')
-            <div class="mb-4 font-medium text-sm text-green-600">
-                {{ $value }}
-            </div>
+        <div class="mb-4 font-medium text-sm text-green-600">
+            {{ $value }}
+        </div>
         @endsession
 
         <x-validation-errors class="mb-4" />
@@ -30,5 +30,9 @@
                 </x-button>
             </div>
         </form>
+        <a class="no-underline font-semibold text-sm hover:text-[#F18A16] text-[#EA9330] w-max mt-8"
+            href="{{ route('login') }}">
+            {{ __('Back to Sign In page') }}
+        </a>
     </x-authentication-card>
 </x-guest-layout>

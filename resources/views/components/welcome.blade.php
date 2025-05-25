@@ -17,5 +17,5 @@
 </div>
 
 <div class="w-2/5 flex justify-center items-center">
-    <img class="w-[360px] h-[420px] rounded-[52px]" src="images/dashboard.png" alt="coffee">
+    <img class="w-[360px] h-[420px] rounded-[52px]" src="/images/dashboard.png" alt="coffee">
 </div>

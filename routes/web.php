@@ -19,4 +19,7 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
     Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire');
+    Route::get('/history', function () {
+        return view('history');
+    })->name('history');
 });

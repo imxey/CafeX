@@ -116,7 +116,7 @@
 
                             <div class="border-t border-gray-200"></div>
 
-                            <x-dropdown-link href="{{ route('profile.show') }}">
+                            <x-dropdown-link href="{{ route('history') }}">
                                 {{ __('History') }}
                             </x-dropdown-link>
 
@@ -130,7 +130,7 @@
                                     @click.prevent="$root.submit();">
                                     <div class="w-full flex justify-between items-center">
                                         {{ __('Log Out') }}
-                                        <img class="w-6 h-6" src="images/logout.png" alt="logout">
+                                        <img class="w-6 h-6" src="/images/logout.png" alt="logout">
                                     </div>
                                 </x-dropdown-link>
                             </form>
