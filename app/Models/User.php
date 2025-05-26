@@ -29,6 +29,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'latitude',
+        'longitude',
         'gauth_id',
         'gauth_type',
     ];
