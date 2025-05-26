@@ -20,7 +20,6 @@ return new class extends Migration
             $table->integer('menu')->nullable();
             $table->integer('price')->nullable();
             $table->integer('wifi_speed')->nullable();
-            $table->integer('distance')->nullable();
             $table->integer('mosque')->nullable();
             $table->timestamps();
         });

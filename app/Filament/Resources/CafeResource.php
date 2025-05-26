@@ -44,9 +44,6 @@ class CafeResource extends Resource
                 TextInput::make('wifi_speed')
                     ->required()
                     ->maxLength(255),
-                TextInput::make('distance')
-                    ->required()
-                    ->maxLength(255),
                 TextInput::make('mosque')
                     ->required()
                     ->maxLength(255),
@@ -62,7 +59,6 @@ class CafeResource extends Resource
                 Tables\Columns\TextColumn::make('menu')->label('Menu')->searchable(),
                 Tables\Columns\TextColumn::make('price')->label('Price')->searchable(),
                 Tables\Columns\TextColumn::make('wifi_speed')->label('Wifi Speed')->searchable(),
-                Tables\Columns\TextColumn::make('distance')->label('Disance')->searchable(),
                 Tables\Columns\TextColumn::make('mosque')->label('Mosque')->searchable(),
             ])
             ->filters([
