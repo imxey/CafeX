@@ -29,4 +29,4 @@ Route::middleware([
 });
     Route::get('/about', function () {
         return view('about');
-    })->name('about.show');
+    })->name('about');
