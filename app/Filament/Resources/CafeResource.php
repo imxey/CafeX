@@ -60,6 +60,8 @@ class CafeResource extends Resource
                 Tables\Columns\TextColumn::make('price')->label('Price')->searchable(),
                 Tables\Columns\TextColumn::make('wifi_speed')->label('Wifi Speed')->searchable(),
                 Tables\Columns\TextColumn::make('mosque')->label('Mosque')->searchable(),
+                Tables\Columns\TextColumn::make('latitude')->label('Latitude')->searchable(),
+                Tables\Columns\TextColumn::make('longitude')->label('Longitude')->searchable(),
             ])
             ->filters([
                 //
