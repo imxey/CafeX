@@ -26,4 +26,7 @@ Route::middleware([
     Route::get('/history', function () {
         return view('history');
     })->name('history');
+    Route::get('/about', function () {
+        return view('about');
+    })->name('about');
 });
