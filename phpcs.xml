@@ -1,0 +1,41 @@
+<ruleset name="MyProjectCustomRules">
+
+    <description>My custom coding standards for this project.</description>
+
+    <rule ref="PSR12"/>
+
+    <rule ref="Squiz.Commenting.FileComment">
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+    </rule>
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="150"/>
+            <property name="absoluteLineLimit" value="160"/>
+        </properties>
+    </rule>
+    <rule ref="Squiz.Commenting.ClassComment">
+        <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+        <exclude name="Squiz.Commenting.ClassComment.WrongStyle"/>
+        <exclude name="Squiz.Commenting.ClassComment.MissingParamTag"/>
+        <exclude name="Squiz.Commenting.ClassComment.MissingReturnTag"/>
+        <exclude name="Squiz.Commenting.ClassComment.MissingThrowsTag"/>
+        <exclude name="Squiz.Commenting.ClassComment.MissingVarTag"/>
+        <exclude name="Squiz.Commenting.ClassComment.MissingPropertyComment"/>
+    </rule>
+
+    <rule ref="Squiz.Commenting.FunctionComment">
+        <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingParamComment"/>
+        <exclude name="Squiz.Commenting.FunctionComment.MissingReturn"/>
+        </rule>
+
+    <file>app</file>
+    <file>routes</file>
+    <file>config</file>
+    <exclude-pattern>*/migrations/*</exclude-pattern>
+    <exclude-pattern>*app/Livewire*</exclude-pattern>
+    <exclude-pattern>*app/Actions*</exclude-pattern>
+    <exclude-pattern>*app/Http/Middleware*</exclude-pattern>
+    <exclude-pattern>*app/Providers*</exclude-pattern>
+    <exclude-pattern>*app/Http/Controllers/OauthController.php*</exclude-pattern>
+    </ruleset>

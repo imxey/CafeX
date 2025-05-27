@@ -3,19 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\DB;
 
 class Recommendation extends Controller
 {
-    public function calculate(Request $request) 
+    public function calculate(Request $request)
     {
-        $userId = $request->input('user_id'); 
+        $userId = $request->input('user_id');
         if (!$userId) {
-            return response()->json(['error' => 'Heey, user_id-nya mana di body request? Aku butuh itu!'], 400); 
-        }  
-        $alternativesData = DB::table('cafes') 
-                                ->select('menu', 'price', 'wifi_speed', 'mosque') 
+            return response()->json(['error' => 'Heey, user_id-nya mana di body request? Aku butuh itu!'], 400);
+        }
+        $alternativesData = DB::table('cafes')
+                                ->select('menu', 'price', 'wifi_speed', 'mosque')
                                 ->get();
 
         if ($alternativesData->isEmpty()) {
@@ -34,8 +33,8 @@ class Recommendation extends Controller
             return response()->json(['error' => 'Matriksnya kosong, ayank!'], 500);
         }
         $userWeightData = DB::table('preferences')
-                            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque') 
-                            ->where('user_id', $userId) 
+                            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque')
+                            ->where('user_id', $userId)
                             ->first();
         if (!$userWeightData) {
             return response()->json(['error' => 'Bobot buat user ini (' . $userId . ') gak ketemu, beb!'], 404);
@@ -66,7 +65,7 @@ class Recommendation extends Controller
 
         $normalized = $this->normalize($matrix, $costBenefit);
         $weighted = $this->applyWeight($normalized, $weights);
-        
+
         if (empty($weighted) || empty($weighted[0])) {
             return response()->json(['error' => 'Matriks terbobotnya kosong setelah normalisasi/pembobotan!'], 500);
         }
@@ -75,7 +74,7 @@ class Recommendation extends Controller
         $ranking = $this->rankingScore($distance);
 
         return response()->json([
-            'requested_user_id' => $userId, 
+            'requested_user_id' => $userId,
             'normalized_weights_used' => $weights,
             'cost_benefit_applied' => $costBenefit,
             'normalized_matrix' => $normalized,
@@ -88,28 +87,32 @@ class Recommendation extends Controller
     private function normalize($matrix, $costBenefit)
     {
         $norm = [];
-        
+
         if (empty($matrix) || empty($matrix[0])) {
-            return $norm; 
+            return $norm;
         }
         $colCount = count($matrix[0]);
         for ($j = 0; $j < $colCount; $j++) {
             $col = array_column($matrix, $j);
-            if (empty($col)) continue; 
+            if (empty($col)) {
+                continue;
+            }
             $min = min($col);
             $max = max($col);
             foreach ($matrix as $i => $row) {
-                if (!isset($norm[$i])) $norm[$i] = [];
+                if (!isset($norm[$i])) {
+                    $norm[$i] = [];
+                }
                 if (!isset($costBenefit[$j])) {
-                    $norm[$i][$j] = 0; 
+                    $norm[$i][$j] = 0;
                     continue;
                 }
                 if ($max == $min) {
-                    $norm[$i][$j] = 0; 
+                    $norm[$i][$j] = 0;
                 } else {
-                    if ($costBenefit[$j] == 1) { 
+                    if ($costBenefit[$j] == 1) {
                         $norm[$i][$j] = ($row[$j] - $min) / ($max - $min);
-                    } else { 
+                    } else {
                         $norm[$i][$j] = ($max - $row[$j]) / ($max - $min);
                     }
                 }
@@ -123,10 +126,8 @@ class Recommendation extends Controller
         $weighted = [];
         foreach ($normalized as $i => $row) {
             foreach ($row as $j => $value) {
-                
                 if (!isset($weights[$j])) {
-                    
-                    $weighted[$i][$j] = 0; 
+                    $weighted[$i][$j] = 0;
                     continue;
                 }
                 $weighted[$i][$j] = $value * $weights[$j];
@@ -138,11 +139,13 @@ class Recommendation extends Controller
     private function borderApproximation($weighted)
     {
         $border = [];
-        
+
         $colCount = count($weighted[0]);
         $rowCount = count($weighted);
 
-        if ($rowCount == 0) return $border; 
+        if ($rowCount == 0) {
+            return $border;
+        }
 
         for ($j = 0; $j < $colCount; $j++) {
             $sum = 0;
@@ -160,8 +163,7 @@ class Recommendation extends Controller
         foreach ($weighted as $i => $row) {
             foreach ($row as $j => $value) {
                 if (!isset($border[$j])) {
-                    
-                    $distance[$i][$j] = $value; 
+                    $distance[$i][$j] = $value;
                     continue;
                 }
                 $distance[$i][$j] = $value - $border[$j];

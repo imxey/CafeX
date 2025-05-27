@@ -3,7 +3,9 @@
 namespace App\View\Components;
 
 use Illuminate\View\Component;
-use Illuminate\Support\Collection; // Import Collection
+use Illuminate\Support\Collection;
+
+// Import Collection
 
 class HistorySection extends Component
 {
@@ -13,7 +15,7 @@ class HistorySection extends Component
     /**
      * Create a new component instance.
      *
-     * @param string $date
+     * @param string                         $date
      * @param \Illuminate\Support\Collection $preferences
      * @return void
      */
