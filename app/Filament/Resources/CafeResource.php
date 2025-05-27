@@ -54,7 +54,7 @@ class CafeResource extends Resource
         return $table
             ->columns([
                 //
-                Tables\Columns\TextColumn::make('name')->label('Name ')->searchable(),
+                Tables\Columns\TextColumn::make('name')->label('Name')->searchable(),
                 Tables\Columns\TextColumn::make('menu')->label('Menu')->searchable(),
                 Tables\Columns\TextColumn::make('price')->label('Price')->searchable(),
                 Tables\Columns\TextColumn::make('wifi_speed')->label('Wifi Speed')->searchable(),

@@ -16,6 +16,7 @@ class History extends Controller
             return redirect()->route('login');
         }
 
+
         $preferences = Preferences::where('user_id', $userId)
             ->latest('created_at')
             ->get();

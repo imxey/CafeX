@@ -1,2 +1,1 @@
-vendor/bin/phpcs app/
-vendor/bin/phpcbf app/
+npx lint-staged 
