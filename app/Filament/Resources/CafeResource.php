@@ -62,6 +62,7 @@ class CafeResource extends Resource
                 Tables\Columns\TextColumn::make('mosque')->label('Mosque')->searchable(),
                 Tables\Columns\TextColumn::make('latitude')->label('Latitude')->searchable(),
                 Tables\Columns\TextColumn::make('longitude')->label('Longitude')->searchable(),
+                Tables\Columns\TextColumn::make('maps')->label('Maps')->searchable(),
             ])
             ->filters([
                 //

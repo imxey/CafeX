@@ -34,7 +34,9 @@ class UserResource extends Resource
                 //
                 Tables\Columns\TextColumn::make('name')->label('Name')->searchable(),
                 Tables\Columns\TextColumn::make('email')->label('Email')->searchable(),
-                Tables\Columns\TextColumn::make('password')->label('password')->searchable(),
+                Tables\Columns\TextColumn::make('latitude')->label('Latitude')->searchable(),
+                Tables\Columns\TextColumn::make('longitude')->label('Longitude')->searchable(),
+                Tables\Columns\TextColumn::make('role')->label('Role')->searchable(),
             ])
             ->filters([
                 //
