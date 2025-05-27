@@ -13,7 +13,7 @@
             <property name="absoluteLineLimit" value="160"/>
         </properties>
     </rule>
-    <rule ref="Squiz.Commenting.ClassComment">
+    <!-- <rule ref="Squiz.Commenting.ClassComment">
         <exclude name="Squiz.Commenting.ClassComment.Missing"/>
         <exclude name="Squiz.Commenting.ClassComment.WrongStyle"/>
         <exclude name="Squiz.Commenting.ClassComment.MissingParamTag"/>
@@ -21,7 +21,7 @@
         <exclude name="Squiz.Commenting.ClassComment.MissingThrowsTag"/>
         <exclude name="Squiz.Commenting.ClassComment.MissingVarTag"/>
         <exclude name="Squiz.Commenting.ClassComment.MissingPropertyComment"/>
-    </rule>
+    </rule> -->
 
     <rule ref="Squiz.Commenting.FunctionComment">
         <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
