@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\History;
 use App\Http\Controllers\SaveLocation;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\QuestionnaireForm;
@@ -28,11 +29,7 @@ Route::middleware([
     })->name('recommendation');
 
     Route::post('/save-location', [SaveLocation::class, 'saveLocation'])->name('save-location');
-
-    Route::get('/history', function () {
-        return view('history');
-    })->name('history');
-
+    Route::get('/history', [History::class, 'index'])->name('history');
     Route::get('/about', function () {
         return view('about');
     })->name('about');
