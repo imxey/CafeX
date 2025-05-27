@@ -28,7 +28,9 @@
         <exclude name="Squiz.Commenting.FunctionComment.MissingParamComment"/>
         <exclude name="Squiz.Commenting.FunctionComment.MissingReturn"/>
         </rule>
-
+    <rule ref="Squiz.PHP.EmbeddedPhp">
+    <exclude name="Squiz.PHP.EmbeddedPhp.NoPhpCodeFound"/>
+</rule>
     <file>app</file>
     <file>routes</file>
     <file>config</file>
