@@ -15,7 +15,7 @@ class CheckPreferences
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()->preferences === null) {
+        if ($request->user()->preferences->isEmpty()) {
             return redirect(route('questionnaire'));
         }
         return $next($request);

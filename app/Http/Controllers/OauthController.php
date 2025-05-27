@@ -25,7 +25,7 @@ class OauthController extends Controller
 
             if ($finduser) {
                 Auth::login($finduser);
-                return redirect('/');
+                return redirect(route('dashboard'));
             } else {
                 $newUser = User::create([
                     'name' => $user->name ?? $user->nickname,
@@ -37,7 +37,7 @@ class OauthController extends Controller
 
                 Auth::login($newUser);
 
-                return redirect('/');
+                return redirect(route('dashboard'));
             }
         } catch (Exception $e) {
             dd("Error: " . $e->getMessage());

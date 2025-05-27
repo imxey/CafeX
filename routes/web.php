@@ -20,15 +20,19 @@ Route::middleware([
     Route::get('/', function () {
         return view('dashboard');
     })->name('dashboard');
+
     Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire')->withoutMiddleware('isEmptyPreferences');
-    Route::get('/recomendation', function () {
+
+    Route::get('/recommendation', function () {
         return view('recommendation');
     })->name('recommendation');
-    Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire');
+
     Route::post('/save-location', [SaveLocation::class, 'saveLocation'])->name('save-location');
+
     Route::get('/history', function () {
         return view('history');
     })->name('history');
+
     Route::get('/about', function () {
         return view('about');
     })->name('about');
