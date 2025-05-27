@@ -11,4 +11,6 @@
             <x-podium class="flex-1" fill="#D1363A" name="Muhammad" height="500" image="/images/sample.png" />
         </div>
     </div>
+
+
 </x-app-layout>

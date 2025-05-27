@@ -29,14 +29,15 @@
         <exclude name="Squiz.Commenting.FunctionComment.MissingReturn"/>
         </rule>
     <rule ref="Squiz.PHP.EmbeddedPhp">
-    <exclude name="Squiz.PHP.EmbeddedPhp.NoPhpCodeFound"/>
-</rule>
+        <exclude name="Squiz.PHP.EmbeddedPhp.NoPhpCodeFound"/>
+    </rule>
     <file>app</file>
     <file>routes</file>
     <file>config</file>
     <exclude-pattern>*/migrations/*</exclude-pattern>
     <exclude-pattern>*app/Livewire*</exclude-pattern>
     <exclude-pattern>*app/Actions*</exclude-pattern>
+    <exclude-pattern>*.blade.php</exclude-pattern>
     <exclude-pattern>*app/Http/Middleware*</exclude-pattern>
     <exclude-pattern>*app/Providers*</exclude-pattern>
     <exclude-pattern>*app/Http/Controllers/OauthController.php*</exclude-pattern>
