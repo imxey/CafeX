@@ -7,11 +7,94 @@ use Illuminate\Support\Facades\DB;
 
 class Recommendation extends Controller
 {
-    public function calculate(Request $request)
+    private function hitungJarakHaversine(
+        float $latitudeA,
+        float $longitudeA,
+        float $latitudeB,
+        float $longitudeB,
+        float $earthRadius = 6371.0
+    ): float {
+
+        $latA_rad = deg2rad($latitudeA);
+        $lonA_rad = deg2rad($longitudeA);
+        $latB_rad = deg2rad($latitudeB);
+        $lonB_rad = deg2rad($longitudeB);
+
+
+        $deltaLat = $latB_rad - $latA_rad;
+        $deltaLon = $lonB_rad - $lonA_rad;
+
+
+        $a = pow(sin($deltaLat / 2), 2) +
+            cos($latA_rad) * cos($latB_rad) *
+            pow(sin($deltaLon / 2), 2);
+
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+
+        $jarak = $earthRadius * $c;
+
+        return $jarak;
+    }
+    public function getDistance(Request $request)
     {
         $userId = $request->input('user_id');
         if (!$userId) {
             return response()->json(['error' => 'Heey, user_id-nya mana di body request? Aku butuh itu!'], 400);
+        }
+
+
+        $user = DB::table('users')->where('id', $userId)->first();
+
+        if (!$user || $user->longitude === null || $user->latitude === null) {
+            return response()->json(['error' => 'Lokasi user ini (' . $userId . ') gak ketemu atau gak lengkap, beb!'], 404);
+        }
+        $userLongitude = (float) $user->longitude;
+        $userLatitude = (float) $user->latitude;
+
+
+        $cafes = DB::table('cafes')
+                        ->select('id', 'name', 'latitude', 'longitude')
+                        ->whereNotNull('latitude')
+                        ->whereNotNull('longitude')
+                        ->get();
+
+        if ($cafes->isEmpty()) {
+            return response()->json(['error' => 'Duh, data cafe-nya gak ada atau gak ada yang punya koordinat lengkap!'], 404);
+        }
+
+        $distances = [];
+        foreach ($cafes as $cafe) {
+            $cafeLatitude = (float) $cafe->latitude;
+            $cafeLongitude = (float) $cafe->longitude;
+
+
+            $distance = $this->hitungJarakHaversine(
+                $userLatitude,
+                $userLongitude,
+                $cafeLatitude,
+                $cafeLongitude
+            );
+
+            $distances[] = [
+                'cafe_name' => $cafe->name,
+                round($distance, 2)
+            ];
+        }
+
+        if (empty($distances)) {
+            return response()->json(['error' => 'Gak ada jarak yang bisa dihitung, mungkin semua cafe gak punya koordinat? Aneh!'], 500);
+        }
+
+
+        return $distances;
+    }
+    public function calculate(Request $request)
+    {
+        $userId = $request->input('user_id');
+        if (!$userId) {
+            return response()->json(['error' => 'Heey, user_id-nya mana di body request?'], 400);
         }
         $alternativesData = DB::table('cafes')
                                 ->select('menu', 'price', 'wifi_speed', 'mosque')
@@ -20,30 +103,40 @@ class Recommendation extends Controller
         if ($alternativesData->isEmpty()) {
             return response()->json(['error' => 'Duh, data alternatifnya gak ada di DB!'], 404);
         }
+        $distance = $this->getDistance($request);
+        foreach ($alternativesData as $key => $alt) {
+            if (isset($distance[$key]) && isset($distance[$key][0])) {
+                $alt->distance = $distance[$key][0];
+            } else {
+                $alt->distance = 0;
+            }
+        }
         $matrix = [];
         foreach ($alternativesData as $alt) {
             $matrix[] = [
                 $alt->menu,
                 $alt->price,
                 $alt->wifi_speed,
-                $alt->mosque
+                $alt->mosque,
+                $alt->distance
             ];
         }
         if (empty($matrix) || empty($matrix[0])) {
-            return response()->json(['error' => 'Matriksnya kosong, ayank!'], 500);
+            return response()->json(['error' => 'Matriksnya kosong'], 500);
         }
         $userWeightData = DB::table('preferences')
-                            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque')
+                            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque', 'preference_distance')
                             ->where('user_id', $userId)
-                            ->first();
+                            ->latest()->first();
         if (!$userWeightData) {
-            return response()->json(['error' => 'Bobot buat user ini (' . $userId . ') gak ketemu, beb!'], 404);
+            return response()->json(['error' => 'Bobot buat user ini (' . $userId . ') gak ketemu'], 404);
         }
         $rawWeights = [
             $userWeightData->preference_menu,
             $userWeightData->preference_price,
             $userWeightData->preference_wifi_speed,
-            $userWeightData->preference_mosque
+            $userWeightData->preference_mosque,
+            $userWeightData->preference_distance,
         ];
 
         $sumRawWeights = array_sum($rawWeights);
@@ -61,7 +154,7 @@ class Recommendation extends Controller
             }
         }
 
-        $costBenefit = [1, 0, 1, 1];
+        $costBenefit = [1, 0, 1, 1, 0];
 
         $normalized = $this->normalize($matrix, $costBenefit);
         $weighted = $this->applyWeight($normalized, $weights);
@@ -70,17 +163,19 @@ class Recommendation extends Controller
             return response()->json(['error' => 'Matriks terbobotnya kosong setelah normalisasi/pembobotan!'], 500);
         }
         $border = $this->borderApproximation($weighted);
-        $distance = $this->distanceToBorder($weighted, $border);
-        $ranking = $this->rankingScore($distance);
-
+        $distanceToBorder = $this->distanceToBorder($weighted, $border);
+        $ranking = $this->rankingScore($distanceToBorder, $request);
+        $distance = $this->getDistance($request);
         return response()->json([
             'requested_user_id' => $userId,
-            'normalized_weights_used' => $weights,
+            'matrix' => $matrix,
             'cost_benefit_applied' => $costBenefit,
+            'raw_weights' => $rawWeights,
             'normalized_matrix' => $normalized,
+            'normalized_weights_used' => $weights,
             'weighted_matrix' => $weighted,
             'border_approximation' => $border,
-            'distance_to_border' => $distance,
+            'distance_to_border' => $distanceToBorder,
             'ranking_score' => $ranking,
         ]);
     }
@@ -148,12 +243,18 @@ class Recommendation extends Controller
         }
 
         for ($j = 0; $j < $colCount; $j++) {
-            $sum = 0;
+            $product = 1;
             for ($i = 0; $i < $rowCount; $i++) {
-                $sum += $weighted[$i][$j];
+                $value = $weighted[$i][$j];
+                // Cegah pembagian 0 atau nilai 0
+                if ($value <= 0) {
+                    $value = 0.0001;
+                }
+                $product *= $value;
             }
-            $border[$j] = $sum / $rowCount;
+            $border[$j] = pow($product, 1 / $rowCount);
         }
+
         return $border;
     }
 
@@ -172,12 +273,36 @@ class Recommendation extends Controller
         return $distance;
     }
 
-    private function rankingScore($distance)
+    private function rankingScore(array $distanceToBorder, Request $request)
     {
-        $scores = [];
-        foreach ($distance as $i => $row) {
-            $scores[$i] = array_sum($row);
+        $distances = $this->getDistance($request);
+
+        $results = [];
+        foreach ($distances as $key => $item) {
+            $cafeName = $item['cafe_name'] ?? '';
+
+            $scoreValue = isset($distanceToBorder[$key])
+                ? array_sum($distanceToBorder[$key])
+                : 0;
+
+            $results[] = [
+                'cafe_name' => $cafeName,
+                'score'     => $scoreValue,
+            ];
         }
-        return $scores;
+
+        $sortedResults = $results;
+        usort($sortedResults, function ($a, $b) {
+            return $b['score'] <=> $a['score'];
+        });
+
+        $sortedNames = array_map(function ($item) {
+            return $item['cafe_name'];
+        }, $sortedResults);
+
+        return [
+            'score' => $results,
+            'sorted_names' => $sortedNames,
+        ];
     }
 }
