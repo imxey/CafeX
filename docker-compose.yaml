@@ -1,0 +1,46 @@
+services:
+  frankenphp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dunglas/frankenphp:latest
+    container_name: frankenphp
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html 
+    environment:
+      SERVER_NAME: ":80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cafe_network
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: cafex
+      MYSQL_USER: frankenphp_user      
+      MYSQL_PASSWORD: frankenphp_pass  
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cafe_network
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel --no-autoupdate --url http://frankenphp:80 run --token eyJhIjoiODdhOGY4ZDdiODRjZjYwNzljMTMyZDk0YWZmMDhjOWEiLCJ0IjoiMDk4Mzk4MTctMjNiNC00N2Y4LWFhOTYtZmFhYzUyMjU0NjhjIiwicyI6Ik9UUTFaREUxTTJJdE1URmtaUzAwWkdGa0xUbGhOR010WlRoa09UVXlOMlV5TVRObCJ9
+    networks:
+      - cafe_network
+
+
+volumes:
+  mysql_data:
+networks:
+  cafe_network:
