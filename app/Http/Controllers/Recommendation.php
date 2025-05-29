@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cafe;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class Recommendation extends Controller
 {
@@ -55,10 +61,10 @@ class Recommendation extends Controller
 
 
         $cafes = DB::table('cafes')
-                        ->select('id', 'name', 'latitude', 'longitude')
-                        ->whereNotNull('latitude')
-                        ->whereNotNull('longitude')
-                        ->get();
+            ->select('id', 'name', 'latitude', 'longitude')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
 
         if ($cafes->isEmpty()) {
             return response()->json(['error' => 'Duh, data cafe-nya gak ada atau gak ada yang punya koordinat lengkap!'], 404);
@@ -97,8 +103,8 @@ class Recommendation extends Controller
             return response()->json(['error' => 'Heey, user_id-nya mana di body request?'], 400);
         }
         $alternativesData = DB::table('cafes')
-                                ->select('menu', 'price', 'wifi_speed', 'mosque')
-                                ->get();
+            ->select('menu', 'price', 'wifi_speed', 'mosque')
+            ->get();
 
         if ($alternativesData->isEmpty()) {
             return response()->json(['error' => 'Duh, data alternatifnya gak ada di DB!'], 404);
@@ -125,9 +131,9 @@ class Recommendation extends Controller
             return response()->json(['error' => 'Matriksnya kosong'], 500);
         }
         $userWeightData = DB::table('preferences')
-                            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque', 'preference_distance')
-                            ->where('user_id', $userId)
-                            ->latest()->first();
+            ->select('preference_menu', 'preference_price', 'preference_wifi_speed', 'preference_mosque', 'preference_distance')
+            ->where('user_id', $userId)
+            ->latest()->first();
         if (!$userWeightData) {
             return response()->json(['error' => 'Bobot buat user ini (' . $userId . ') gak ketemu'], 404);
         }
@@ -304,5 +310,131 @@ class Recommendation extends Controller
             'score' => $results,
             'sorted_names' => $sortedNames,
         ];
+    }
+
+    private function fetchRecommendationDataFromApi(int $userId): ?array
+    {
+        $apiUrl = 'http://127.0.0.1:8000/api/recommendation';
+        Log::info("Attempting to fetch recommendation API for user_id: {$userId} from URL: {$apiUrl}");
+
+        $response = Http::post($apiUrl, ['user_id' => $userId]);
+
+        if (!$response->successful()) {
+            Log::error("API request failed for user_id {$userId}. Status: {$response->status()}. Body: " . $response->body());
+
+            $response->throw();
+        }
+
+        Log::info("API request successful for user_id {$userId}.");
+        return $response->json();
+    }
+
+
+    public function getRecommendations(Request $request)
+    {
+        $userId = 1;
+
+        if (Auth::check()) {
+            $loggedInUser = Auth::user();
+            $userId = $loggedInUser->id;
+            Log::info('Recommendation page: Logged in user ID: ' . $userId);
+        } else {
+            Log::info('Recommendation page: Guest user ID (default): ' . $userId);
+        }
+
+        try {
+            $apiData = $this->fetchRecommendationDataFromApi($userId);
+
+            if ($apiData === null) {
+                Log::error('Received null data from API fetch for user_id ' . $userId);
+                return view('recommendation', [
+                    'recommendations' => [],
+                    'border_approximation' => [],
+                    'error' => 'Failed to retrieve data from the recommendation service.'
+                ]);
+            }
+
+            if (!isset($apiData['ranking_score']['score']) || !isset($apiData['ranking_score']['sorted_names'])) {
+                Log::error('API response missing expected ranking_score data for user_id ' . $userId . ': ' . json_encode($apiData));
+                return view('recommendation', [
+                    'recommendations' => [],
+                    'border_approximation' => [],
+                    'error' => 'Recommendation data format is incorrect.'
+                ]);
+            }
+
+            // 1. Ambil semua cafe dari DB
+            $apiCafeNames = array_column($apiData['ranking_score']['score'], 'cafe_name');
+            $cafesFromDb = Cafe::whereIn('name', $apiCafeNames)->get()->keyBy('name');
+
+            // 2. Buat mapping nama cafe ke index original
+            $cafeNameToOriginalIndex = [];
+            foreach ($apiData['ranking_score']['score'] as $index => $scoreItem) {
+                $cafeNameToOriginalIndex[$scoreItem['cafe_name']] = $index;
+            }
+
+            // 3. Siapkan data untuk view
+            $recommendations = [];
+            $rank = 1;
+
+            foreach ($apiData['ranking_score']['sorted_names'] as $sortedCafeName) {
+                if (isset($cafesFromDb[$sortedCafeName]) && isset($cafeNameToOriginalIndex[$sortedCafeName])) {
+                    $cafeDb = $cafesFromDb[$sortedCafeName];
+                    $originalIndex = $cafeNameToOriginalIndex[$sortedCafeName];
+
+                    $currentCafeScore = 0;
+                    foreach ($apiData['ranking_score']['score'] as $scoreDetail) {
+                        if ($scoreDetail['cafe_name'] === $sortedCafeName) {
+                            $currentCafeScore = $scoreDetail['score'];
+                            break;
+                        }
+                    }
+
+                    $recommendations[] = [
+                        'rank' => $rank++,
+                        'id' => $cafeDb->id,
+                        'name' => $cafeDb->name,
+                        'address' => $cafeDb->address ?: 'Alamat tidak tersedia',
+                        'image_url' => $cafeDb->image_url ?: '/images/default-cafe.png',
+                        'open_time' => $cafeDb->open_time ? \Carbon\Carbon::parse($cafeDb->open_time)->format('g a') : 'N/A',
+                        'close_time' => $cafeDb->close_time ? \Carbon\Carbon::parse($cafeDb->close_time)->format('g a') : 'N/A',
+                        'normalized_matrix_row' => $apiData['normalized_matrix'][$originalIndex] ?? [],
+                        'weighted_matrix_row' => $apiData['weighted_matrix'][$originalIndex] ?? [],
+                        'distance_to_border_row' => $apiData['distance_to_border'][$originalIndex] ?? [],
+                        'ranking_score_value' => $currentCafeScore,
+                    ];
+                } else {
+                    Log::warning("Cafe '{$sortedCafeName}' from API (user_id {$userId}) not found in DB or missing original index.");
+                }
+            }
+
+            $borderApproximation = $apiData['border_approximation'] ?? [];
+
+            return view('recommendation', [
+                'recommendations' => $recommendations,
+                'border_approximation' => $borderApproximation,
+            ]);
+        } catch (ConnectionException $e) {
+            Log::error('API Connection Exception for user_id ' . $userId . ' in getRecommendations: ' . $e->getMessage());
+            return view('recommendation', [
+                'recommendations' => [],
+                'border_approximation' => [],
+                'error' => 'Could not connect to the recommendation service. Please try again later.'
+            ]);
+        } catch (RequestException $e) {
+            Log::error('API Request Exception for user_id ' . $userId . ' in getRecommendations: ' . $e->getMessage() . ' Response: ' . $e->response->body());
+            return view('recommendation', [
+                'recommendations' => [],
+                'border_approximation' => [],
+                'error' => 'Failed to fetch recommendations from API. Service returned an error. (Status: ' . $e->response->status() . ')'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('General Error for user_id ' . $userId . ' in getRecommendations: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+            return view('recommendation', [
+                'recommendations' => [],
+                'border_approximation' => [],
+                'error' => 'An unexpected error occurred while preparing recommendations.'
+            ]);
+        }
     }
 }

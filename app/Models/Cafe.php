@@ -15,6 +15,10 @@ class Cafe extends Model
         'price',
         'wifi_speed',
         'mosque',
-        'maps'
+        'maps',
+        'address',
+        'image_url',
+        'open_time',
+        'close_time'
     ];
 }
