@@ -14,8 +14,9 @@
                 <x-recommendation-card
                     :rank="$rec['rank']"
                     :title="$rec['name']"
-                    :image="asset($rec['image_url'])" {{-- Pastikan image_url adalah path yang benar dari public --}}
+                    :image="asset($rec['image_url'])"
                     :address="$rec['address']"
+                    :maps="$rec['maps']"
                     :openTime="$rec['open_time']"
                     :closeTime="$rec['close_time']"
                     {{-- Teruskan data MABAC ke komponen card --}}
@@ -23,7 +24,8 @@
                     :weightedData="$rec['weighted_matrix_row']"
                     :borderApproximation="$border_approximation" {{-- Ini global --}}
                     :distanceData="$rec['distance_to_border_row']"
-                    :rankingScoreValue="$rec['ranking_score_value']" />
+                    :rankingScoreValue="$rec['ranking_score_value']"
+                    :recommendationDateTime="$recommendation_datetime_formatted" />
                 @endforeach
             </div>
             @elseif(!isset($error)) {{-- Hanya tampilkan "No recommendations" jika tidak ada error --}}
