@@ -25,14 +25,13 @@ Route::middleware([
 
     Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire')->withoutMiddleware('isEmptyPreferences');
 
-    // Route::get('/recommendation', function () {
-    //     return view('recommendation');
-    // })->name('recommendation');
-
     Route::get('/recommendation', [Recommendation::class, 'getRecommendations'])->name('recommendation');
 
     Route::post('/save-location', [SaveLocation::class, 'saveLocation'])->name('save-location');
+
     Route::get('/history', [History::class, 'index'])->name('history');
+    Route::post('/history/recommendation-details', [History::class, 'getHistoricRecommendationDetails'])->name('history.recommendation.details');
+
     Route::get('/about', function () {
         return view('about');
     })->name('about');

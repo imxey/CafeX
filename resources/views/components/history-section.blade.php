@@ -1,57 +1,149 @@
-@props(['date', 'preferences']) {{-- 'preferences' will be a Collection of Preference models --}}
+@props(['date', 'preferences'])
 
-<div class="flex flex-col gap-4 w-full md:w-3/4 lg:w-1/2 mt-8 px-4"> {{-- Added responsive width and padding --}}
+<div class="flex flex-col gap-4 w-full md:w-3/4 lg:w-1/2 mt-8 px-4">
     <h3 class="text-black font-semibold text-lg">{{ $date }}</h3>
 
     @if($preferences && $preferences->count() > 0)
     @foreach ($preferences as $preference)
-    {{--
-                $preference is an instance of your App\Models\Preference model.
-                So $preference->created_at is a Carbon instance.
-            --}}
-    <button
-        type="button" {{-- Good practice for buttons not submitting forms --}}
-        class="select-none cursor-pointer hover:bg-[#616465] hover:text-white text-black border-2 border-[#616465] px-8 py-3 flex justify-between items-center rounded-md shadow-sm" {{-- Added rounded and shadow --}}
-        {{-- For modal functionality, you'll likely use JavaScript (e.g., Alpine.js) --}}
-        {{-- Example with Alpine.js (assuming you have a modal component/logic) --}}
-        {{-- x-data @click="$dispatch('open-preference-modal', { preferenceId: {{ $preference->id }} })" --}}
-        {{-- Or a simple JS function: --}}
-        onclick="showPreferenceDetails({{ $preference->id }}, '{{ $preference->created_at->format('H:i:s') }}')">
-        <p class="text-md font-semibold">{{ $preference->created_at->format('H:i:s') }}</p>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708" />
-        </svg>
-    </button>
+    <div class="border-2 border-gray-300 rounded-md shadow-sm bg-white"
+        x-data="historyItemData({{ $preference->id }}, {{ Auth::id() }})">
+        {{-- Accordion Header (Item Waktu) --}}
+        <button
+            @click="toggleOpen()"
+            type="button"
+            class="w-full select-none cursor-pointer hover:bg-gray-100 text-black px-6 py-4 flex justify-between items-center rounded-t-md"
+            :class="{ 'rounded-b-md': !isOpen, 'bg-gray-100': isOpen }">
+            <p class="text-md font-semibold">{{ $preference->created_at->format('H:i:s') }}</p>
+            <svg class="w-5 h-5 text-gray-600 transition-transform duration-300" :class="{'rotate-180': isOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+
+        {{-- Accordion Content (Daftar Kafe Rekomendasi) --}}
+        <div x-show="isOpen" x-collapse class="p-4 border-t border-gray-300">
+            <div x-show="isLoading" class="text-center py-3">
+                <p class="text-gray-500 italic">Loading recommendations...</p>
+                {{-- Anda bisa tambahkan spinner SVG di sini --}}
+            </div>
+            <div x-show="error" class="text-center py-3 text-red-500" x-text="error"></div>
+
+            <div x-show="!isLoading && !error && recommendations.length > 0" class="space-y-3">
+                {{-- <h4 class="text-sm font-medium text-gray-700 mb-2">Top Recommendations:</h4> --}}
+                <template x-for="(rec, index) in recommendations" :key="rec.id || index">
+                    <button
+                        @click="$dispatch('open-mabac-modal', {
+                                    rank: rec.rank,
+                                    title: rec.name, // Ini adalah nama kafe
+                                    image: rec.image_url,
+                                    address: rec.address,
+                                    maps: rec.maps,
+                                    openTime: rec.open_time,
+                                    closeTime: rec.close_time,
+                                    normalizedData: rec.normalized_matrix_row,
+                                    weightedData: rec.weighted_matrix_row,
+                                    borderApproximation: borderApproximationGlobal, // Menggunakan state global dari historyItemData
+                                    distanceData: rec.distance_to_border_row,
+                                    rankingScoreValue: rec.ranking_score_value,
+                                    recommendationDateTime: recommendationDateTimeForModal // Menggunakan state dari historyItemData
+                                })"
+                        class="w-full text-left select-none cursor-pointer hover:bg-gray-200 bg-gray-100 text-gray-800 border border-gray-300 px-4 py-3 flex justify-between items-center rounded-md shadow-sm hover:shadow-md transition-shadow">
+                        <span class="font-medium text-sm" x-text="`#${rec.rank} ${rec.name}`"></span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chevron-right text-gray-500" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708" />
+                        </svg>
+                    </button>
+                </template>
+            </div>
+            <div x-show="!isLoading && !error && recommendations.length === 0 && isOpen" class="text-center py-3 text-gray-500">
+                No recommendations were found for this specific history entry.
+            </div>
+        </div>
+    </div>
     @endforeach
     @else
-    {{-- This case should ideally not be hit if controller logic ensures preferences are passed only if they exist for the date --}}
     <p class="text-sm text-gray-500">No entries for this date.</p>
     @endif
 </div>
 
-{{-- Add a placeholder for your modal and JS function if not using Alpine.js or similar --}}
-
 @once
 @push('scripts')
 <script>
-    function showPreferenceDetails(preferenceId, time) {
-        // This is a very basic example.
-        // You'd typically fetch full preference data via AJAX if needed,
-        // then populate and show your modal.
-        alert(`Details for preference ID: ${preferenceId} at ${time}\nMenu: [Fetch Data]\nPrice: [Fetch Data]... etc.\n\nImplement your modal logic here.`);
+    function historyItemData(pId, uId) { // Menerima preferenceId dan userId
+        return {
+            isOpen: false,
+            isLoading: false,
+            recommendations: [],
+            borderApproximationGlobal: [], // Untuk border_approximation yang global
+            recommendationDateTimeForModal: '', // Untuk datetime yang akan ditampilkan di modal
+            error: null,
+            preferenceId: pId,
+            userId: uId,
 
-        // Example:
-        // 1. Get modal element
-        // const modal = document.getElementById('myPreferenceModal');
-        // 2. Populate modal content (e.g., by fetching data with `fetch` API)
-        // fetch(`/api/preferences/${preferenceId}`)
-        //   .then(response => response.json())
-        //   .then(data => {
-        //      // document.getElementById('modal-time').textContent = time;
-        //      // document.getElementById('modal-menu').textContent = data.preference_menu;
-        //      // ... populate other fields
-        //      // modal.style.display = 'block'; // Show modal
-        //   });
+            toggleOpen() {
+                this.isOpen = !this.isOpen;
+                if (this.isOpen && this.recommendations.length === 0 && !this.isLoading && !this.error) {
+                    this.fetchRecommendations();
+                }
+            },
+
+            fetchRecommendations() {
+                if (this.userId === null) {
+                    this.error = "User not authenticated.";
+                    this.isLoading = false;
+                    return;
+                }
+                this.isLoading = true;
+                this.error = null;
+
+                fetch(`{{ route('history.recommendation.details') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            preference_id: this.preferenceId,
+                            user_id: this.userId
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.error || `Error: ${response.status}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.recommendations) {
+                            this.recommendations = data.recommendations;
+                            this.borderApproximationGlobal = data.border_approximation || [];
+                            this.recommendationDateTimeForModal = data.recommendation_datetime_formatted || new Date().toLocaleString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+                            this.error = null;
+                        } else {
+                            this.error = data.error || "Invalid data from history details.";
+                            this.recommendations = [];
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching historic recommendations for preference ' + this.preferenceId + ':', error);
+                        this.error = error.message || 'Failed to load recommendations.';
+                        this.recommendations = [];
+                    })
+                    .finally(() => {
+                        this.isLoading = false;
+                    });
+            }
+        }
     }
 </script>
 @endpush
