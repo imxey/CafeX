@@ -21,7 +21,7 @@ class Recommendation extends Controller
 
     public function getRecommendations(Request $request)
     {
-        $userId = null;
+        $userId = 1; // Default for guest, will be overridden if logged in
 
         if (Auth::check()) {
             $loggedInUser = Auth::user();
@@ -32,21 +32,45 @@ class Recommendation extends Controller
         }
 
         try {
-            $mabacResult = $this->mabacService->calculate($userId);
+            // Assuming you might want to pass a specific preference ID in the future
+            // For now, it will get the latest preference for the user
+            $mabacResult = $this->mabacService->calculate($userId, null);
 
-            if (empty($mabacResult) || !isset($mabacResult['ranking']) || !isset($mabacResult['ranking']['score'])) {
+
+            // Check for error from MABAC service first
+            if (isset($mabacResult['error'])) {
+                Log::error('MABAC service returned an error for user_id ' . $userId . ': ' . $mabacResult['error']);
+                return view('recommendation', [
+                    'recommendations' => [],
+                    'border_approximation' => [],
+                    'error' => $mabacResult['error'],
+                    'recommendation_datetime_formatted' => Carbon::now()->format('l, d-m-Y H:i:s'),
+                ]);
+            }
+
+            // Adjusted keys based on MABAC service's new output
+            if (empty($mabacResult) || !isset($mabacResult['ranking_score']) || !isset($mabacResult['ranking_score']['score'])) {
                 Log::error('Received empty or malformed data from MABAC service for user_id ' . $userId . ': ' . json_encode($mabacResult));
                 return view('recommendation', [
                     'recommendations' => [],
                     'border_approximation' => [],
-                    'error' => 'Failed to retrieve data from the MABAC service or data is incomplete.'
+                    'error' => 'Failed to retrieve data from the MABAC service or data is incomplete.',
+                    'recommendation_datetime_formatted' => Carbon::now()->format('l, d-m-Y H:i:s'),
                 ]);
             }
 
-            $rankingData = $mabacResult['ranking'];
+            $rankingData = $mabacResult['ranking_score']; // Use 'ranking_score'
 
-            $userPreference = DB::table('preferences')->where('user_id', $userId)->latest()->first();
-            $recommendationDateTimeString = $userPreference->created_at ?? now()->toDateTimeString();
+            // Fetch preference creation time for display (if you decide to keep it in MABAC output)
+            // If not, you might need to fetch it separately or use current time
+            $recommendationDateTimeString = null;
+            if (isset($mabacResult['preference_created_at'])) { // Check if MABAC service provides it
+                $recommendationDateTimeString = $mabacResult['preference_created_at'];
+            } else {
+                $userPreference = DB::table('preferences')->where('user_id', $userId)->latest('created_at')->first();
+                $recommendationDateTimeString = $userPreference->created_at ?? now()->toDateTimeString();
+            }
+
 
             try {
                 $formattedDateTime = Carbon::parse($recommendationDateTimeString)->format('l, d-m-Y H:i:s');
@@ -55,21 +79,18 @@ class Recommendation extends Controller
                 $formattedDateTime = Carbon::now()->format('l, d-m-Y H:i:s');
             }
 
-            // 1. Ambil semua cafe dari DB
             $apiCafeNames = array_column($rankingData['score'], 'cafe_name');
             $cafesFromDb = Cafe::whereIn('name', $apiCafeNames)->get()->keyBy('name');
 
-            // 2. Buat mapping nama cafe ke index original
             $cafeNameToIndexMap = [];
             foreach ($rankingData['score'] as $index => $scoreItem) {
                 $cafeNameToIndexMap[$scoreItem['cafe_name']] = $index;
             }
 
-
-            // 3. Siapkan data untuk view
             $recommendations = [];
             $rank = 1;
 
+            // Use 'sorted_names' from 'ranking_score'
             foreach ($rankingData['sorted_names'] as $sortedCafeName) {
                 if (isset($cafesFromDb[$sortedCafeName]) && isset($cafeNameToIndexMap[$sortedCafeName])) {
                     $cafeDb = $cafesFromDb[$sortedCafeName];
@@ -108,13 +129,16 @@ class Recommendation extends Controller
                 'recommendations' => $recommendations,
                 'border_approximation' => $borderApproximation,
                 'recommendation_datetime_formatted' => $formattedDateTime,
+                // Pass other MABAC details if your view needs them
+                'mabac_matrix' => $mabacResult['matrix'] ?? [],
+                'mabac_weights' => $mabacResult['normalized_weights_used'] ?? [],
             ]);
         } catch (\Exception $e) {
             Log::error('General Error for user_id ' . $userId . ' in getRecommendations (using MABAC service): ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
             return view('recommendation', [
                 'recommendations' => [],
                 'border_approximation' => [],
-                'recommendation_datetime_formatted' => Carbon::now()->format('l, d-m-Y H:i:s'), // Fallback
+                'recommendation_datetime_formatted' => Carbon::now()->format('l, d-m-Y H:i:s'),
                 'error' => 'An unexpected error occurred while preparing recommendations using MABAC service.'
             ]);
         }
