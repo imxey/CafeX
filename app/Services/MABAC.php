@@ -27,9 +27,9 @@ class MABAC
     {
         $user = DB::table('users')->where('id', $userId)->first();
         if (!$user || $user->longitude === null || $user->latitude === null) {
-            // Return empty or throw an exception if user location is crucial and not found
-            // For this context, we'll return an empty array, and calculate() should handle it
-            return [];
+            //set latitude and longitude in PNJ
+            $user->longitude = 106.82359549354105;
+            $user->latitude = -6.370504297709936;
         }
 
         $userLongitude = (float) $user->longitude;
@@ -73,6 +73,8 @@ class MABAC
 
         // 3. Hitung jarak
         $cafeDistances = $this->getDistance($userId);
+
+        // dd($cafeDistances);
         if (empty($cafeDistances) && $userId) { // Only error out if userId was provided and distances couldn't be fetched
             // This implies user location might be missing. For some criteria, this might be okay,
             // but for distance, it's an issue. We'll use a large default.
@@ -84,11 +86,6 @@ class MABAC
 
         $alternativesData->each(function ($alt) use ($distanceLookup) {
             $distanceInfo = $distanceLookup->get($alt->name);
-            // If distance info is not found or user location was not available,
-            // use a very large number (less ideal) or handle as missing data.
-            // Using a large number if not found, similar to the 9999 before,
-            // but ideally, every cafe should have a distance if user location is present.
-            // If $cafeDistances was empty due to missing user location, all distances will be 9999.
             $alt->distance = $distanceInfo ? $distanceInfo['distance'] : 9999.0;
         });
 
@@ -103,10 +100,10 @@ class MABAC
             ];
         })->all();
 
+
         if (empty($matrix)) {
             return ['error' => "Decision matrix could not be formed."];
         }
-
         // 5. Gunakan bobot dari preferensi
         $rawWeights = [
             (float) $userWeightData->preference_menu,
@@ -162,7 +159,8 @@ class MABAC
     protected function normalize($matrix, $costBenefit)
     {
         $norm = [];
-        if (empty($matrix) || empty($matrix[0])) return $norm;
+        if (empty($matrix) || empty($matrix[0]))
+            return $norm;
 
         $colCount = count($matrix[0]);
         for ($j = 0; $j < $colCount; $j++) {
@@ -206,12 +204,14 @@ class MABAC
     protected function borderApproximation($weighted)
     {
         $border = [];
-        if (empty($weighted) || empty($weighted[0])) return $border;
+        if (empty($weighted) || empty($weighted[0]))
+            return $border;
 
         $colCount = count($weighted[0]);
         $rowCount = count($weighted);
 
-        if ($rowCount == 0) return $border;
+        if ($rowCount == 0)
+            return $border;
 
         for ($j = 0; $j < $colCount; $j++) {
             $product = 1.0; // Use float
@@ -258,7 +258,7 @@ class MABAC
         foreach ($cafeIdentifiers as $key => $item) {
             $results[] = [
                 'cafe_name' => $item['cafe_name'] ?? 'Unknown Cafe', // Ensure 'cafe_name' key exists
-                'score'     => isset($distanceToBorder[$key]) && is_array($distanceToBorder[$key])
+                'score' => isset($distanceToBorder[$key]) && is_array($distanceToBorder[$key])
                     ? array_sum($distanceToBorder[$key])
                     : 0 // Default score if data is missing
             ];
