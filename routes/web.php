@@ -3,6 +3,7 @@
 use App\Http\Controllers\History;
 use App\Http\Controllers\Recommendation;
 use App\Http\Controllers\SaveLocation;
+use App\Http\Controllers\WeightsProfile;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\QuestionnaireForm;
 use Laravel\Socialite\Facades\Socialite;
@@ -35,4 +36,5 @@ Route::middleware([
     Route::get('/about', function () {
         return view('about');
     })->name('about');
+
 });
