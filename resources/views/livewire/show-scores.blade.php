@@ -13,8 +13,7 @@
                 <x-scores-stepper title="{{ $key }}" :value="$value" />
             @endforeach
             <div class="flex justify-end mt-8">
-                <x-button type="button" wire:loading.attr="disabled" wire:navigate
-                    href="{{ route('questionnaire') }}">
+                <x-button type="button" wire:loading.attr="disabled" wire:navigate href="{{ route('preferences') }}">
                     {{ __('Edit Scores') }}
                 </x-button>
             </div>

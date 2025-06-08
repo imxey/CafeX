@@ -1,13 +1,10 @@
 <?php
 
 use App\Http\Controllers\History;
+use App\Http\Controllers\Preferences;
 use App\Http\Controllers\Recommendation;
 use App\Http\Controllers\SaveLocation;
-use App\Http\Controllers\WeightsProfile;
 use Illuminate\Support\Facades\Route;
-use App\Livewire\QuestionnaireForm;
-use Laravel\Socialite\Facades\Socialite;
-
 
 
 Route::get('oauth/{provider}', [\App\Http\Controllers\OauthController::class, 'redirectToProvider'])->where('provider', 'google|github')->name('oauth.redirect');
@@ -24,7 +21,8 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 
-    Route::get('/questionnaire', QuestionnaireForm::class)->name('questionnaire')->withoutMiddleware('isEmptyPreferences');
+    Route::get('/preferences', action: [Preferences::class, 'index'])->name('preferences')->withoutMiddleware('isEmptyPreferences');
+    Route::post('/preferences', action: [Preferences::class, 'store'])->name('preferences.store')->withoutMiddleware('isEmptyPreferences');
 
     Route::get('/recommendation', [Recommendation::class, 'getRecommendations'])->name('recommendation');
 
