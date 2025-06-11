@@ -7,6 +7,7 @@ use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -24,6 +25,21 @@ class UserResource extends Resource
         return $form
             ->schema([
                 //
+                TextInput::make('name')
+                ->required()
+                ->maxLength(255),
+                TextInput::make('latitude')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('longitude')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('email')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('role')
+                    ->required()
+                    ->maxLength(255),
             ]);
     }
 

@@ -21,9 +21,13 @@
     "vite": "^6.2.4"
   },
   "lint-staged": {
-    "*.php": [ 
+    "*.php": [
       "vendor/bin/phpcbf app/",
-      "vendor/bin/phpcs app/" 
+      "vendor/bin/phpcs app/"
     ]
+  },
+  "dependencies": {
+    "@alpinejs/collapse": "^3.14.9",
+    "alpinejs": "^3.14.9"
   }
 }

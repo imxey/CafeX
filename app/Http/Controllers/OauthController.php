@@ -31,7 +31,7 @@ class OauthController extends Controller
                     'email' => $user->email ?? $user->nickname,
                     'gauth_id' => $user->id,
                     'gauth_type' => $provider,
-                    'password' => bcrypt('password'),
+                    'password' => bcrypt(Str::random(32)),
                 ]);
 
                 Auth::login($newUser);

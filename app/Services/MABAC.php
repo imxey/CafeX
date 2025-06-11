@@ -115,7 +115,7 @@ class MABAC
         $weights = [];
         if ($sumRawWeights > 0) {
             $weights = array_map(fn($w) => $w / $sumRawWeights, $rawWeights);
-        } else if (count($rawWeights) > 0) {
+        } elseif (count($rawWeights) > 0) {
             $weights = array_fill(0, count($rawWeights), 1 / count($rawWeights));
         } else {
             return ['error' => "No criteria weights available from preference."];
@@ -151,8 +151,9 @@ class MABAC
     protected function normalize($matrix, $costBenefit)
     {
         $norm = [];
-        if (empty($matrix) || empty($matrix[0]))
+        if (empty($matrix) || empty($matrix[0])) {
             return $norm;
+        }
 
         $colCount = count($matrix[0]);
         for ($j = 0; $j < $colCount; $j++) {
@@ -195,14 +196,16 @@ class MABAC
     protected function borderApproximation($weighted)
     {
         $border = [];
-        if (empty($weighted) || empty($weighted[0]))
+        if (empty($weighted) || empty($weighted[0])) {
             return $border;
+        }
 
         $colCount = count($weighted[0]);
         $rowCount = count($weighted);
 
-        if ($rowCount == 0)
+        if ($rowCount == 0) {
             return $border;
+        }
 
         for ($j = 0; $j < $colCount; $j++) {
             $product = 1.0;
