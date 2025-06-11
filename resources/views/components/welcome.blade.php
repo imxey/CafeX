@@ -12,8 +12,6 @@
     <p class="mt-3 text-gray-500 leading-relaxed">
         Launched in 2025, KafeX has quickly become a trusted companion for coffee enthusiasts, offering personalized suggestions from a growing database of cafés across multiple cities. Whether you're looking for a cozy spot to work, a specialty brew, or the best latte art in town, KafeX ensures you find your ideal coffee experience with just a few taps.
     </p>
-
-    <button class="mt-8 text-white select-none cursor-pointer hover:bg-[#F18A16] bg-[#EA9330] p-3 rounded-xl font-semibold fs-3 min-w-[15vw]">More Detail</button>
 </div>
 
 <div class="w-2/5 flex justify-center items-center">

@@ -6,8 +6,9 @@
     @if($preferences && $preferences->count() > 0)
     @foreach ($preferences as $preference)
     <div class="border-2 border-gray-300 rounded-md shadow-sm bg-white"
-        x-data="historyItemData({{ $preference->id }}, {{ Auth::id() }})">
-        {{-- Accordion Header (Item Waktu) --}}
+        x-data="historyItemData({{ $preference->id }}, {{ Auth::id() }})"> {{-- This Alpine component is for the individual history item's accordion and data fetching --}}
+
+        {{-- Button to toggle the list of recommended cafes for this history entry --}}
         <button
             @click="toggleOpen()"
             type="button"
@@ -19,21 +20,20 @@
             </svg>
         </button>
 
-        {{-- Accordion Content (Daftar Kafe Rekomendasi) --}}
+        {{-- Content of the history item (list of recommended cafes) --}}
         <div x-show="isOpen" x-collapse class="p-4 border-t border-gray-300">
             <div x-show="isLoading" class="text-center py-3">
                 <p class="text-gray-500 italic">Loading recommendations...</p>
-                {{-- Anda bisa tambahkan spinner SVG di sini --}}
             </div>
             <div x-show="error" class="text-center py-3 text-red-500" x-text="error"></div>
 
             <div x-show="!isLoading && !error && recommendations.length > 0" class="space-y-3">
-                {{-- <h4 class="text-sm font-medium text-gray-700 mb-2">Top Recommendations:</h4> --}}
                 <template x-for="(rec, index) in recommendations" :key="rec.id || index">
+                    {{-- Button to open the GLOBAL MABAC modal with this specific recommendation's details --}}
                     <button
                         @click="$dispatch('open-mabac-modal', {
                                     rank: rec.rank,
-                                    title: rec.name, // Ini adalah nama kafe
+                                    title: rec.name,
                                     image: rec.image_url,
                                     address: rec.address,
                                     maps: rec.maps,
@@ -41,10 +41,10 @@
                                     closeTime: rec.close_time,
                                     normalizedData: rec.normalized_matrix_row,
                                     weightedData: rec.weighted_matrix_row,
-                                    borderApproximation: borderApproximationGlobal, // Menggunakan state global dari historyItemData
+                                    borderApproximation: borderApproximationGlobal, {{-- From historyItemData --}}
                                     distanceData: rec.distance_to_border_row,
                                     rankingScoreValue: rec.ranking_score_value,
-                                    recommendationDateTime: recommendationDateTimeForModal // Menggunakan state dari historyItemData
+                                    recommendationDateTime: recommendationDateTimeForModal {{-- From historyItemData --}}
                                 })"
                         class="w-full text-left select-none cursor-pointer hover:bg-gray-200 bg-gray-100 text-gray-800 border border-gray-300 px-4 py-3 flex justify-between items-center rounded-md shadow-sm hover:shadow-md transition-shadow">
                         <span class="font-medium text-sm" x-text="`#${rec.rank} ${rec.name}`"></span>
@@ -68,24 +68,22 @@
 @once
 @push('scripts')
 <script>
-    function historyItemData(pId, uId) { // Menerima preferenceId dan userId
+    function historyItemData(pId, uId) {
         return {
-            isOpen: false,
+            isOpen: false, // For this specific history item's accordion
             isLoading: false,
             recommendations: [],
-            borderApproximationGlobal: [], // Untuk border_approximation yang global
-            recommendationDateTimeForModal: '', // Untuk datetime yang akan ditampilkan di modal
+            borderApproximationGlobal: [], // Fetched data for the modal
+            recommendationDateTimeForModal: '', // Fetched data for the modal
             error: null,
             preferenceId: pId,
             userId: uId,
-
             toggleOpen() {
                 this.isOpen = !this.isOpen;
                 if (this.isOpen && this.recommendations.length === 0 && !this.isLoading && !this.error) {
                     this.fetchRecommendations();
                 }
             },
-
             fetchRecommendations() {
                 if (this.userId === null) {
                     this.error = "User not authenticated.";
@@ -94,7 +92,6 @@
                 }
                 this.isLoading = true;
                 this.error = null;
-
                 fetch(`{{ route('history.recommendation.details') }}`, {
                         method: 'POST',
                         headers: {
@@ -120,13 +117,7 @@
                             this.recommendations = data.recommendations;
                             this.borderApproximationGlobal = data.border_approximation || [];
                             this.recommendationDateTimeForModal = data.recommendation_datetime_formatted || new Date().toLocaleString('id-ID', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'numeric',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit'
+                                /* date options */
                             });
                             this.error = null;
                         } else {
@@ -143,7 +134,7 @@
                         this.isLoading = false;
                     });
             }
-        }
+        };
     }
 </script>
 @endpush

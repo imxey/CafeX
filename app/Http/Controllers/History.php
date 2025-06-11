@@ -18,13 +18,14 @@ class History extends Controller
     public function __construct(MABACHistory $mabacHistoryService)
     {
         $this->mabacHistoryService = $mabacHistoryService;
-        // $this->middleware('auth');
     }
 
-    // ... (method index tetap sama) ...
     public function index()
     {
         $userId = Auth::id();
+        if (!$userId) {
+            return redirect()->route('login')->with('error', 'You must be logged in to view history.');
+        }
         $preferences = Preferences::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -47,50 +48,62 @@ class History extends Controller
         ]);
 
         $userId = Auth::id();
+        if (!$userId) {
+            return response()->json(['error' => 'User not authenticated.'], 401);
+        }
         $preferenceId = (int) $request->input('preference_id');
 
+        // Verify the preference belongs to the authenticated user
         $preference = Preferences::where('id', $preferenceId)->where('user_id', $userId)->first();
         if (!$preference) {
             return response()->json(['error' => 'Preference not found or access denied.'], 404);
         }
 
         try {
-            // Panggil service MABACHistory
             $mabacResult = $this->mabacHistoryService->calculateHistoricMabac($userId, $preferenceId);
 
-            if (isset($mabacResult['error']) || empty($mabacResult) || !isset($mabacResult['ranking']['sorted_scores_with_id'])) {
+            // Check against the new MABAC result structure
+            if (
+                isset($mabacResult['error']) ||
+                empty($mabacResult) ||
+                !isset($mabacResult['ranking_score']) ||
+                !isset($mabacResult['ranking_score']['sorted_items']) ||
+                !isset($mabacResult['preference_created_at'])
+            ) {
                 Log::error("MABACHistory returned error or incomplete data for user {$userId}, pref {$preferenceId}: " . json_encode($mabacResult));
                 return response()->json(['error' => $mabacResult['error'] ?? 'Failed to calculate MABAC for the selected history.'], 500);
             }
 
             $formattedDateTime = Carbon::parse($mabacResult['preference_created_at'])->format('l, d-m-Y H:i:s');
 
-            $rankedCafeIds = array_column($mabacResult['ranking']['sorted_scores_with_id'], 'cafe_id');
-            if (empty($rankedCafeIds)) { // Handle jika tidak ada cafe yang diranking
-                $cafesDetails = collect();
-            } else {
+            // Use 'sorted_items' from 'ranking_score'
+            $rankedCafeItems = $mabacResult['ranking_score']['sorted_items'];
+            $rankedCafeIds = array_column($rankedCafeItems, 'cafe_id');
+
+            $cafesDetails = collect();
+            if (!empty($rankedCafeIds)) {
                 $cafesDetails = Cafe::whereIn('id', $rankedCafeIds)
-                    ->orderByRaw(DB::raw("FIELD(id, " . implode(',', array_map('intval', $rankedCafeIds)) . ")")) // Pastikan integer
                     ->get()
                     ->keyBy('id');
             }
 
-
             $recommendationsForJs = [];
-            foreach ($mabacResult['ranking']['sorted_scores_with_id'] as $rank => $rankedItem) {
+            $currentRank = 1;
+
+            foreach ($rankedCafeItems as $rankedItem) {
                 $cafeDb = $cafesDetails->get($rankedItem['cafe_id']);
                 if ($cafeDb) {
                     $originalIndex = -1;
-                    foreach ($mabacResult['ranking']['score'] as $idx => $rawScoreItem) {
-                        if (($rawScoreItem['cafe_id'] ?? null) == $rankedItem['cafe_id']) { // Tambah null coalescing
+                    foreach ($mabacResult['ranking_score']['score'] as $idx => $rawScoreItem) {
+                        if (($rawScoreItem['cafe_id'] ?? null) == $rankedItem['cafe_id']) {
                             $originalIndex = $idx;
                             break;
                         }
                     }
 
-                    if ($originalIndex !== -1 && isset($mabacResult['normalized_matrix'][$originalIndex])) { // Pastikan index ada di matriks
+                    if ($originalIndex !== -1 && isset($mabacResult['normalized_matrix'][$originalIndex])) {
                         $recommendationsForJs[] = [
-                            'rank' => $rank + 1,
+                            'rank' => $currentRank++,
                             'id' => $cafeDb->id,
                             'name' => $cafeDb->name,
                             'address' => $cafeDb->address ?: 'Alamat tidak tersedia',
@@ -104,8 +117,10 @@ class History extends Controller
                             'ranking_score_value' => $rankedItem['score'],
                         ];
                     } else {
-                        Log::warning("Could not find original index or matrix data for cafe_id: {$rankedItem['cafe_id']} in history.");
+                        Log::warning("Could not find original index or matrix data for cafe_id: {$rankedItem['cafe_id']} in history (pref_id: {$preferenceId}). OriginalIndex: {$originalIndex}. Matrix available: " . (isset($mabacResult['normalized_matrix']) ? 'yes' : 'no'));
                     }
+                } else {
+                    Log::warning("Cafe details not found in DB for cafe_id: {$rankedItem['cafe_id']} from MABAC historic result (pref_id: {$preferenceId}).");
                 }
             }
 
@@ -116,7 +131,8 @@ class History extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error("Error in getHistoricRecommendationDetails for user {$userId}, pref {$preferenceId}: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
-            return response()->json(['error' => 'An unexpected error occurred while fetching historic details.'], 500);
+            Log::error("Stack Trace: " . $e->getTraceAsString());
+            return response()->json(['error' => 'An unexpected error occurred while fetching historic details. Please check logs.'], 500);
         }
     }
 }

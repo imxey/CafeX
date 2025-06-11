@@ -26,25 +26,33 @@ class MABAC
     public function getDistance(int $userId): array
     {
         $user = DB::table('users')->where('id', $userId)->first();
-        if (!$user || $user->longitude === null || $user->latitude === null) {
-            //set latitude and longitude in PNJ
-            $user->longitude = 106.82359549354105;
-            $user->latitude = -6.370504297709936;
-        }
 
-        $userLongitude = (float) $user->longitude;
-        $userLatitude = (float) $user->latitude;
+        // Default to PNJ coordinates
+        $userLatitude = -6.370504297709936;
+        $userLongitude = 106.82359549354105;
+
+        if ($user && $user->latitude !== null && $user->longitude !== null) {
+            $userLatitude = (float) $user->latitude;
+            $userLongitude = (float) $user->longitude;
+        }
 
         $cafes = DB::table('cafes')->select('id', 'name', 'latitude', 'longitude')
             ->whereNotNull('latitude')->whereNotNull('longitude')->get();
 
-        $distances = [];
-        foreach ($cafes as $cafe) {
-            $distance = $this->hitungJarakHaversine($userLatitude, $userLongitude, (float) $cafe->latitude, (float) $cafe->longitude);
-            // IMPORTANT: Ensure the key for distance matches how it's retrieved later
-            $distances[] = ['cafe_name' => $cafe->name, 'distance' => round($distance, 2)];
+        if ($cafes->isEmpty()) {
+            return []; // No cafes with coordinates
         }
 
+        $distances = [];
+        foreach ($cafes as $cafe) {
+            if (is_numeric($cafe->latitude) && is_numeric($cafe->longitude)) {
+                $distance = $this->hitungJarakHaversine($userLatitude, $userLongitude, (float) $cafe->latitude, (float) $cafe->longitude);
+                $distances[] = ['cafe_name' => $cafe->name, 'distance' => round($distance, 2)];
+            } else {
+                // Cafe has null or non-numeric lat/lon, assign a very large distance or log
+                $distances[] = ['cafe_name' => $cafe->name, 'distance' => 99999.0];
+            }
+        }
         return $distances;
     }
 
@@ -64,7 +72,7 @@ class MABAC
 
         // 2. Ambil data alternatif (cafe)
         $alternativesData = DB::table('cafes')
-            ->select('id', 'name', 'menu', 'price', 'wifi_speed', 'mosque', 'latitude', 'longitude') // Added lat/lon for context if needed
+            ->select('id', 'name', 'menu', 'price', 'wifi_speed', 'mosque', 'latitude', 'longitude')
             ->get();
 
         if ($alternativesData->isEmpty()) {
@@ -73,15 +81,6 @@ class MABAC
 
         // 3. Hitung jarak
         $cafeDistances = $this->getDistance($userId);
-
-        // dd($cafeDistances);
-        if (empty($cafeDistances) && $userId) { // Only error out if userId was provided and distances couldn't be fetched
-            // This implies user location might be missing. For some criteria, this might be okay,
-            // but for distance, it's an issue. We'll use a large default.
-            // Or, you could return an error:
-            // return ['error' => "Could not calculate distances, user location might be missing for user_id: {$userId}."];
-        }
-
         $distanceLookup = collect($cafeDistances)->keyBy('cafe_name');
 
         $alternativesData->each(function ($alt) use ($distanceLookup) {
@@ -96,15 +95,14 @@ class MABAC
                 (float) $alt->price,
                 (float) $alt->wifi_speed,
                 (float) $alt->mosque,
-                (float) $alt->distance // ensure this is correctly populated
+                (float) $alt->distance
             ];
         })->all();
-
 
         if (empty($matrix)) {
             return ['error' => "Decision matrix could not be formed."];
         }
-        // 5. Gunakan bobot dari preferensi
+
         $rawWeights = [
             (float) $userWeightData->preference_menu,
             (float) $userWeightData->preference_price,
@@ -118,41 +116,35 @@ class MABAC
         if ($sumRawWeights > 0) {
             $weights = array_map(fn($w) => $w / $sumRawWeights, $rawWeights);
         } else if (count($rawWeights) > 0) {
-            // If all raw weights are 0, distribute equally
             $weights = array_fill(0, count($rawWeights), 1 / count($rawWeights));
         } else {
             return ['error' => "No criteria weights available from preference."];
         }
 
-        // Define Cost/Benefit for each criterion
-        // menu (benefit=1), price (cost=0), wifi_speed (benefit=1), mosque (benefit=1), distance (cost=0)
         $costBenefit = [1, 0, 1, 1, 0];
 
-        // 6. Lakukan kalkulasi MABAC
         $normalized = $this->normalize($matrix, $costBenefit);
         $weighted = $this->applyWeight($normalized, $weights);
         $border = $this->borderApproximation($weighted);
         $distanceToBorder = $this->distanceToBorder($weighted, $border);
 
-        // Prepare data for ranking (cafe names specifically)
-        // The rankingScore method needs a list of items that have 'cafe_name'
         $cafeIdentifiersForRanking = $alternativesData->map(function ($alt) {
-            return ['cafe_name' => $alt->name]; // Only name is needed for ranking output structure
+            return ['cafe_id' => $alt->id, 'cafe_name' => $alt->name];
         })->all();
         $ranking = $this->rankingScore($distanceToBorder, $cafeIdentifiersForRanking);
 
         return [
-            'requested_user_id' => $userId, // Match API output
+            'requested_user_id' => $userId,
             'matrix' => $matrix,
-            'cost_benefit_applied' => $costBenefit, // Match API output
+            'cost_benefit_applied' => $costBenefit,
             'raw_weights' => $rawWeights,
-            'normalized_weights_used' => $weights, // Match API output ('normalized_weights_used')
+            'normalized_weights_used' => $weights,
             'normalized_matrix' => $normalized,
             'weighted_matrix' => $weighted,
             'border_approximation' => $border,
             'distance_to_border' => $distanceToBorder,
-            'ranking_score' => $ranking, // Match API output ('ranking_score')
-            // 'preference_created_at' => $userWeightData->created_at->toDateTimeString(), // Optional, not in API output
+            'ranking_score' => $ranking,
+            'preference_created_at' => $userWeightData->created_at->toDateTimeString(),
         ];
     }
 
@@ -165,7 +157,7 @@ class MABAC
         $colCount = count($matrix[0]);
         for ($j = 0; $j < $colCount; $j++) {
             $col = array_column($matrix, $j);
-            if (empty($col)) { // Handle case where a column might be empty
+            if (empty($col)) {
                 foreach ($matrix as $i => $_) {
                     $norm[$i][$j] = 0;
                 }
@@ -176,11 +168,11 @@ class MABAC
 
             foreach ($matrix as $i => $row) {
                 if ($max == $min) {
-                    $norm[$i][$j] = 0; // Avoid division by zero, or assign 1 if all values are same and beneficial
+                    $norm[$i][$j] = 0;
                 } else {
-                    if ($costBenefit[$j] == 1) { // Benefit attribute
+                    if ($costBenefit[$j] == 1) {
                         $norm[$i][$j] = ($row[$j] - $min) / ($max - $min);
-                    } else { // Cost attribute
+                    } else {
                         $norm[$i][$j] = ($max - $row[$j]) / ($max - $min);
                     }
                 }
@@ -194,7 +186,6 @@ class MABAC
         $weighted = [];
         foreach ($normalized as $i => $row) {
             foreach ($row as $j => $value) {
-                // Ensure weight exists for this criterion, otherwise, it implies a mismatch
                 $weighted[$i][$j] = isset($weights[$j]) ? ($value * $weights[$j]) : 0;
             }
         }
@@ -214,16 +205,11 @@ class MABAC
             return $border;
 
         for ($j = 0; $j < $colCount; $j++) {
-            $product = 1.0; // Use float
+            $product = 1.0;
             $actualValuesInProduct = 0;
             foreach ($weighted as $row) {
-                // Ensure column $j exists in row
                 if (isset($row[$j])) {
                     $value = (float) $row[$j];
-                    // MABAC's border approximation uses geometric mean. Values must be > 0.
-                    // A common practice is to add a small epsilon if a value is 0 or very close,
-                    // or handle it as per specific MABAC variant rules.
-                    // The reference API output suggests 0.0001 for 0 values.
                     $product *= ($value <= 0 ? 0.0001 : $value);
                     $actualValuesInProduct++;
                 }
@@ -231,7 +217,7 @@ class MABAC
             if ($actualValuesInProduct > 0) {
                 $border[$j] = pow($product, 1.0 / $actualValuesInProduct);
             } else {
-                $border[$j] = 0.0001; // Default if no values found for a criterion
+                $border[$j] = 0.0001;
             }
         }
         return $border;
@@ -242,33 +228,32 @@ class MABAC
         $distance = [];
         foreach ($weighted as $i => $row) {
             foreach ($row as $j => $value) {
-                // Ensure border value exists for this criterion
                 $distance[$i][$j] = $value - ($border[$j] ?? 0);
             }
         }
         return $distance;
     }
 
-    // Renamed $distances parameter to $cafeIdentifiers for clarity
+    // Sort Ranking Cafe
     protected function rankingScore(array $distanceToBorder, array $cafeIdentifiers)
     {
         $results = [];
-        // $cafeIdentifiers is expected to be like: [['cafe_name' => 'Cafe A'], ['cafe_name' => 'Cafe B'], ...]
-        // $distanceToBorder is indexed 0, 1, 2... corresponding to the alternatives' order
         foreach ($cafeIdentifiers as $key => $item) {
             $results[] = [
-                'cafe_name' => $item['cafe_name'] ?? 'Unknown Cafe', // Ensure 'cafe_name' key exists
-                'score' => isset($distanceToBorder[$key]) && is_array($distanceToBorder[$key])
+                'cafe_id'   => $item['cafe_id'] ?? null, // ADDED cafe_id
+                'cafe_name' => $item['cafe_name'] ?? 'Unknown Cafe',
+                'score'     => isset($distanceToBorder[$key]) && is_array($distanceToBorder[$key])
                     ? array_sum($distanceToBorder[$key])
-                    : 0 // Default score if data is missing
+                    : 0
             ];
         }
 
-        $sortedResults = $results; // Use $results directly for sorting
+        $sortedResults = $results;
         usort($sortedResults, fn($a, $b) => $b['score'] <=> $a['score']);
 
         return [
-            'score' => $results, // Original order of scores
+            'score' => $results,
+            'sorted_items' => $sortedResults,
             'sorted_names' => array_column($sortedResults, 'cafe_name'),
         ];
     }
