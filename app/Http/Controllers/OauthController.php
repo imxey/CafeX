@@ -26,12 +26,13 @@ class OauthController extends Controller
                 Auth::login($finduser);
                 return redirect(route('dashboard'));
             } else {
+                $pw = Str::random(32);
                 $newUser = User::create([
                     'name' => $user->name ?? $user->nickname,
                     'email' => $user->email ?? $user->nickname,
                     'gauth_id' => $user->id,
                     'gauth_type' => $provider,
-                    'password' => bcrypt(Str::random(32)),
+                    'password' => bcrypt($pw),
                 ]);
 
                 Auth::login($newUser);
