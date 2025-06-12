@@ -1,2 +1,2 @@
-import './alpine';
+// import './alpine';
 import './bootstrap';

@@ -92,8 +92,15 @@
             </div>
         </div>
     </div>
-
     @push('scripts')
+    <script type="module">
+        import Alpine from 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/+esm'
+        import collapse from 'https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.9/+esm'
+
+        Alpine.plugin(collapse)
+        window.Alpine = Alpine
+        Alpine.start()
+    </script>
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('mabacModalController', () => ({ // This name matches x-data above

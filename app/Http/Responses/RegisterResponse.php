@@ -8,6 +8,6 @@ class RegisterResponse implements RegisterResponseContract
 {
     public function toResponse($request)
     {
-        return redirect()->route('questionnaire')->with('status', 'Registration successful! Please login.');
+        return redirect()->route('preferences')->with('status', 'Registration successful! Please login.');
     }
 }
