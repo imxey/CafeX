@@ -1,6 +1,6 @@
 # CafeX - Cafe Recommendation System using MABAC Method (CafeX)
 <div align="center">
-![Logo CafeX](public/images/coffee.ico)
+  <img src="public/images/coffee.ico" width="100" alt="Logo CafeX"/>
 </div>
 
 ## Description
