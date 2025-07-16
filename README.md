@@ -1,6 +1,7 @@
-# CafeX - Sistem Rekomendasi Cafe Berbasis DSS Mabac
-
+# CafeX - Cafe Recommendation System using MABAC Method (CafeX)
+<div align="center">
 ![Logo CafeX](public/images/coffee.ico)
+</div>
 
 ## Description
 CafeX is a web-based decision support system (DSS) designed to recommend the best cafes based on user preferences using the MABAC (Multi-Attributive Border Approximation area Comparison) method.
@@ -15,9 +16,9 @@ Perfect for users looking for the right cafe based on multiple criteria like pri
     <td><img src="public/images/1.png" alt="Login"/></td>
     <td><img src="public/images/2.png" alt="Preferences Question"/></td>
     <td><img src="public/images/3.png" alt="Home"/></td>
-    <td><img src="public/images/4.png" alt="Recomendation"/></td>
   </tr>
   <tr>
+    <td><img src="public/images/4.png" alt="Recomendation"/></td>
     <td><img src="public/images/5.png" alt="Mabac"/></td>
     <td><img src="public/images/6.png" alt="Profile"/></td>
   </tr>
